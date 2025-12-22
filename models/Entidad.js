@@ -1,19 +1,19 @@
 import mongoose from "mongoose";
 
 const ModuloSchema = new mongoose.Schema({
-  idModulo: String,       // "Lobby", "UCI", "Quirofano"
-  addressableKey: String // key o label en Unity
+  idModulo: String,
+  addressableKey: String
 });
 
 const EntidadSchema = new mongoose.Schema({
   entidadId: {
-    type: String,         // "UTP", "UPC", etc.
+    type: String,
     required: true,
     unique: true
   },
 
   codigoDeActivacion: {
-    type: String,         // licencia
+    type: String,
     required: true,
     unique: true
   },
