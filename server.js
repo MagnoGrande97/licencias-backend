@@ -75,6 +75,12 @@ app.post("/licencias/crear", async (req, res) => {
   }
 });
 
+// Endpoint temporal en server.js
+app.get("/licencias/listar", async (req, res) => {
+    const entidades = await Entidad.find({}, { entidadId: 1, codigoDeActivacion: 1, _id: 0 });
+    res.json(entidades);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor corriendo en puerto", PORT);
