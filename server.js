@@ -1,76 +1,111 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Entidad from "./models/Entidad.js";
+import Institucion from "./models/Institucion.js";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB conectado"))
-  .catch(err => console.error(err));
+  .catch(err => console.error("Error MongoDB:", err));
 
 /**
- * Endpoint para validar licencias
+ * ============================
+ * VALIDAR LICENCIA
  * POST /licencias/validar
  * Body:
  * {
- *   "entidadId": "UCV",
- *   "licencia": "M-77C84D81"
+ *   "licencia": "A-C0C96826"
  * }
+ * ============================
  */
 app.post("/licencias/validar", async (req, res) => {
-  const { entidadId, licencia } = req.body;
+  try {
+    const { licencia } = req.body;
 
-  if (!entidadId || !licencia)
-    return res.status(400).json({ valida: false });
+    if (!licencia)
+      return res.status(400).json({ valida: false, msg: "Licencia requerida" });
 
-  const entidad = await Entidad.findOne({
-    entidadId,
-    codigoDeActivacion: licencia
-  });
+    const institucion = await Institucion.findOne({
+      institucionLicencia: licencia
+    });
 
-  if (!entidad)
-    return res.json({ valida: false });
+    if (!institucion)
+      return res.json({ valida: false });
 
-  res.json({
-    valida: true,
-    entidadId: entidad.entidadId,
-    modulos: entidad.modulos
-  });
+    // Validar expiración
+    if (
+      institucion.expiracion &&
+      new Date(institucion.expiracion) < new Date()
+    ) {
+      return res.json({ valida: false, msg: "Licencia expirada" });
+    }
+
+    return res.json({
+      valida: true,
+      institucionID: institucion._id.toString(),
+      institucionNombre: institucion.institucionNombre,
+      institucionLicencia: institucion.institucionLicencia,
+      permisos: institucion.permisos,
+      expiracion: institucion.expiracion,
+      version: institucion.version
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ valida: false, msg: "Error interno" });
+  }
 });
 
 /**
- * Endpoint para crear licencias automáticamente
+ * ============================
+ * CREAR INSTITUCIÓN / LICENCIA
  * POST /licencias/crear
  * Body:
  * {
- *   "entidadId": "UCV",
- *   "licencia": "M-77C84D81"
+ *   "institucionNombre": "Draeger Peru",
+ *   "institucionLicencia": "A-C0C96826",
+ *   "expiracion": "2026-12-23T15:34:05.474Z"
  * }
+ * ============================
  */
 app.post("/licencias/crear", async (req, res) => {
-  const { entidadId, licencia } = req.body;
-
-  if (!entidadId || !licencia)
-    return res.status(400).json({ ok: false, msg: "Faltan datos" });
-
   try {
-    // Verifica si ya existe
-    const existe = await Entidad.findOne({ entidadId });
-    if (existe) return res.json({ ok: true, msg: "Entidad ya existe" });
+    const { institucionNombre, institucionLicencia, expiracion } = req.body;
 
-    const nuevaEntidad = new Entidad({
-      entidadId,
-      codigoDeActivacion: licencia,
-      modulos: [] // Aquí puedes añadir módulos predeterminados si quieres
+    if (!institucionNombre || !institucionLicencia)
+      return res
+        .status(400)
+        .json({ ok: false, msg: "Faltan datos" });
+
+    const existe = await Institucion.findOne({
+      institucionLicencia
     });
 
-    await nuevaEntidad.save();
-    res.json({ ok: true, msg: "Entidad creada correctamente" });
+    if (existe)
+      return res.json({ ok: true, msg: "La licencia ya existe" });
+
+    const nueva = new Institucion({
+      institucionNombre,
+      institucionLicencia,
+      expiracion: expiracion ?? null,
+      permisos: [],
+      version: 1
+    });
+
+    await nueva.save();
+
+    return res.json({
+      ok: true,
+      institucionID: nueva._id.toString(),
+      institucionNombre: nueva.institucionNombre,
+      institucionLicencia: nueva.institucionLicencia
+    });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ ok: false, msg: e.message });
   }
 });
