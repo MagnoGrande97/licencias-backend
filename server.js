@@ -25,13 +25,17 @@ mongoose
  */
 app.post("/licencias/validar", async (req, res) => {
   try {
-    const { licencia } = req.body;
+    const { institucionLicencia } = req.body;
 
-    if (!licencia)
-      return res.status(400).json({ valida: false, msg: "Licencia requerida" });
+    if (!institucionLicencia) {
+      return res.status(400).json({
+        valida: false,
+        msg: "institucionLicencia requerida"
+      });
+    }
 
     const institucion = await Institucion.findOne({
-      institucionLicencia: licencia
+      institucionLicencia
     });
 
     if (!institucion)
@@ -56,7 +60,10 @@ app.post("/licencias/validar", async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ valida: false, msg: "Error interno" });
+    res.status(500).json({
+      valida: false,
+      msg: "Error interno"
+    });
   }
 });
 
