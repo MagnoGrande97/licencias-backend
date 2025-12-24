@@ -54,7 +54,23 @@ const InstitucionSchema = new mongoose.Schema(
 );
 
 // ============================
-// NOMBRE EXPLÍCITO DE COLECCIÓN
+// MÉTODOS ESTÁTICOS
+// ============================
+InstitucionSchema.statics.listar = function () {
+  return this.find(
+    {},
+    {
+      institucionNombre: 1,
+      institucionLicencia: 1,
+      expiracion: 1,
+      version: 1,
+      createdAt: 1
+    }
+  ).sort({ createdAt: -1 });
+};
+
+// ============================
+// EXPORT
 // ============================
 export default mongoose.model(
   "Institucion",
