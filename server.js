@@ -171,50 +171,58 @@ app.post("/instituciones/obtener-licencia", async (req, res) => {
   });
 });
 
+import mongoose from "mongoose";
+
 // ============================
-// ACTUALIZAR CATEGORÍAS
-// PATCH /instituciones/:id/categorias
+// APLICACION
 // ============================
-app.patch("/instituciones/:id/categorias", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { categorias } = req.body;
+const AplicacionSchema = new mongoose.Schema(
+  {
+    aplicacionID: String,
+    aplicacionNombre: String,
+    aplicacionActiva: { type: Boolean, default: true },
+    aplicacionFechaExpiracion: { type: Date, default: null }
+  },
+  { _id: false }
+);
 
-    if (!Array.isArray(categorias)) {
-      return res.status(400).json({
-        ok: false,
-        msg: "categorias debe ser un array"
-      });
+// ============================
+// CATEGORIA
+// ============================
+const CategoriaSchema = new mongoose.Schema(
+  {
+    categoriaID: String,
+    categoriaNombre: String,
+    aplicaciones: { type: [AplicacionSchema], default: [] }
+  },
+  { _id: false }
+);
+
+// ============================
+// INSTITUCION
+// ============================
+const InstitucionSchema = new mongoose.Schema(
+  {
+    institucionNombre: String,
+    institucionLicencia: { type: String, unique: true },
+
+    categorias: { type: [CategoriaSchema], default: [] },
+
+    version: { type: Number, default: 1 }
+  },
+  {
+    timestamps: {
+      createdAt: "creadoEl",
+      updatedAt: "actualizadoEl"
     }
-
-    const inst = await Institucion.findById(id);
-    if (!inst) {
-      return res.status(404).json({
-        ok: false,
-        msg: "Institución no encontrada"
-      });
-    }
-
-    inst.categorias = categorias;
-    inst.version += 1;
-    inst.actualizadoEl = new Date();
-
-    await inst.save();
-
-    return res.json({
-      ok: true,
-      version: inst.version,
-      actualizadoEl: inst.actualizadoEl
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      ok: false,
-      msg: "Error interno"
-    });
   }
-});
+);
 
+export default mongoose.model(
+  "Institucion",
+  InstitucionSchema,
+  "instituciones"
+);
 
 // ============================
 // DEBUG DB (opcional)
