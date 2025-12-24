@@ -147,6 +147,30 @@ app.get("/instituciones", async (req, res) => {
   }
 });
 
+app.post("/instituciones/obtener-licencia", async (req, res) => {
+  const { institucionLicencia } = req.body;
+
+  const inst = await Institucion.findOne({ institucionLicencia });
+  if (!inst) return res.json({ valida: false });
+
+  // Expiración global
+  if (
+    inst.licencia?.expiracion &&
+    new Date(inst.licencia.expiracion) < new Date()
+  ) {
+    return res.json({ valida: false, msg: "Licencia expirada" });
+  }
+
+  res.json({
+    valida: true,
+    institucionID: inst._id.toString(),
+    institucionNombre: inst.institucionNombre,
+    categorias: inst.categorias,
+    licencia: inst.licencia,
+    version: inst.version
+  });
+});
+
 // ============================
 // DEBUG DB (opcional)
 // ============================
