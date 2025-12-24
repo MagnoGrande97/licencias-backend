@@ -38,4 +38,8 @@ const InstitucionSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("Institucion", InstitucionSchema);
+export default mongoose.model(
+  "Institucion",
+  InstitucionSchema,
+  "instituciones" // nombre explícito
+);
