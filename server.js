@@ -8,22 +8,73 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// ============================
+// CONEXIÓN MONGODB
+// ============================
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB conectado"))
   .catch(err => console.error("Error MongoDB:", err));
 
-/**
- * ============================
- * VALIDAR LICENCIA
- * POST /licencias/validar
- * Body:
- * {
- *   "licencia": "A-C0C96826"
- * }
- * ============================
- */
-app.post("/licencias/validar", async (req, res) => {
+// ============================
+// CREAR INSTITUCIÓN + LICENCIA
+// POST /instituciones
+// ============================
+app.post("/instituciones", async (req, res) => {
+  try {
+    const {
+      institucionNombre,
+      institucionLicencia,
+      expiracion
+    } = req.body;
+
+    if (!institucionNombre || !institucionLicencia) {
+      return res.status(400).json({
+        ok: false,
+        msg: "institucionNombre e institucionLicencia son obligatorios"
+      });
+    }
+
+    const existe = await Institucion.findOne({ institucionLicencia });
+
+    if (existe) {
+      return res.json({
+        ok: true,
+        msg: "La licencia ya existe",
+        institucionID: existe._id.toString()
+      });
+    }
+
+    const nueva = new Institucion({
+      institucionNombre,
+      institucionLicencia,
+      expiracion: expiracion ?? null,
+      permisos: [],
+      version: 1
+    });
+
+    await nueva.save();
+
+    return res.json({
+      ok: true,
+      institucionID: nueva._id.toString(),
+      institucionNombre: nueva.institucionNombre,
+      institucionLicencia: nueva.institucionLicencia
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      ok: false,
+      msg: "Error interno"
+    });
+  }
+});
+
+// ============================
+// VALIDAR LICENCIA
+// POST /instituciones/validar-licencia
+// ============================
+app.post("/instituciones/validar-licencia", async (req, res) => {
   try {
     const { institucionLicencia } = req.body;
 
@@ -34,19 +85,20 @@ app.post("/licencias/validar", async (req, res) => {
       });
     }
 
-    const institucion = await Institucion.findOne({
-      institucionLicencia
-    });
+    const institucion = await Institucion.findOne({ institucionLicencia });
 
-    if (!institucion)
+    if (!institucion) {
       return res.json({ valida: false });
+    }
 
-    // Validar expiración
     if (
       institucion.expiracion &&
       new Date(institucion.expiracion) < new Date()
     ) {
-      return res.json({ valida: false, msg: "Licencia expirada" });
+      return res.json({
+        valida: false,
+        msg: "Licencia expirada"
+      });
     }
 
     return res.json({
@@ -67,70 +119,33 @@ app.post("/licencias/validar", async (req, res) => {
   }
 });
 
-/**
- * ============================
- * CREAR INSTITUCIÓN / LICENCIA
- * POST /licencias/crear
- * Body:
- * {
- *   "institucionNombre": "Draeger Peru",
- *   "institucionLicencia": "A-C0C96826",
- *   "expiracion": "2026-12-23T15:34:05.474Z"
- * }
- * ============================
- */
-app.post("/licencias/crear", async (req, res) => {
+// ============================
+// LISTAR INSTITUCIONES
+// GET /instituciones
+// ============================
+app.get("/instituciones", async (req, res) => {
   try {
-    const { institucionNombre, institucionLicencia, expiracion } = req.body;
+    const instituciones = await Institucion.find(
+      {},
+      {
+        institucionNombre: 1,
+        institucionLicencia: 1,
+        expiracion: 1,
+        version: 1
+      }
+    );
 
-    if (!institucionNombre || !institucionLicencia)
-      return res
-        .status(400)
-        .json({ ok: false, msg: "Faltan datos" });
-
-    const existe = await Institucion.findOne({
-      institucionLicencia
-    });
-
-    if (existe)
-      return res.json({ ok: true, msg: "La licencia ya existe" });
-
-    const nueva = new Institucion({
-      institucionNombre,
-      institucionLicencia,
-      expiracion: expiracion ?? null,
-      permisos: [],
-      version: 1
-    });
-
-    await nueva.save();
-
-    return res.json({
-      ok: true,
-      institucionID: nueva._id.toString(),
-      institucionNombre: nueva.institucionNombre,
-      institucionLicencia: nueva.institucionLicencia
-    });
+    res.json(instituciones);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ ok: false, msg: e.message });
+    res.status(500).json({
+      ok: false,
+      msg: "Error interno"
+    });
   }
 });
 
-// Endpoint temporal en server.js
-app.get("/instituciones", async (req, res) => {
-  const instituciones = await Institucion.find(
-    {},
-    {
-      institucionNombre: 1,
-      institucionLicencia: 1,
-      expiracion: 1
-    }
-  );
-
-  res.json(instituciones);
-});
-
+// ============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor corriendo en puerto", PORT);
