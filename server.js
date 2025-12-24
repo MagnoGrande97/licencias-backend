@@ -171,58 +171,120 @@ app.post("/instituciones/obtener-licencia", async (req, res) => {
   });
 });
 
-import mongoose from "mongoose";
+// GET /instituciones/:id
+app.get("/instituciones/:id", async (req, res) => {
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
 
-// ============================
-// APLICACION
-// ============================
-const AplicacionSchema = new mongoose.Schema(
-  {
-    aplicacionID: String,
-    aplicacionNombre: String,
-    aplicacionActiva: { type: Boolean, default: true },
-    aplicacionFechaExpiracion: { type: Date, default: null }
-  },
-  { _id: false }
-);
+  res.json(inst);
+});
 
-// ============================
-// CATEGORIA
-// ============================
-const CategoriaSchema = new mongoose.Schema(
-  {
-    categoriaID: String,
-    categoriaNombre: String,
-    aplicaciones: { type: [AplicacionSchema], default: [] }
-  },
-  { _id: false }
-);
 
-// ============================
-// INSTITUCION
-// ============================
-const InstitucionSchema = new mongoose.Schema(
-  {
-    institucionNombre: String,
-    institucionLicencia: { type: String, unique: true },
+// POST /instituciones/:id/categorias
+app.post("/instituciones/:id/categorias", async (req, res) => {
+  const { categoriaID, categoriaNombre } = req.body;
 
-    categorias: { type: [CategoriaSchema], default: [] },
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
 
-    version: { type: Number, default: 1 }
-  },
-  {
-    timestamps: {
-      createdAt: "creadoEl",
-      updatedAt: "actualizadoEl"
+  inst.categorias.push({
+    categoriaID,
+    categoriaNombre,
+    aplicaciones: []
+  });
+
+  inst.version++;
+  await inst.save();
+
+  res.json({ ok: true, version: inst.version });
+});
+
+
+// POST /instituciones/:id/categorias/:categoriaID/apps
+app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => {
+  const {
+    aplicacionID,
+    aplicacionNombre,
+    aplicacionActiva,
+    aplicacionFechaExpiracion
+  } = req.body;
+
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
+
+  const categoria = inst.categorias.find(
+    c => c.categoriaID === req.params.categoriaID
+  );
+
+  if (!categoria)
+    return res.status(404).json({ ok: false, msg: "Categoría no existe" });
+
+  const existente = categoria.aplicaciones.find(
+    a => a.aplicacionID === aplicacionID
+  );
+
+  if (existente) {
+    existente.aplicacionNombre = aplicacionNombre;
+    existente.aplicacionActiva = aplicacionActiva;
+    existente.aplicacionFechaExpiracion = aplicacionFechaExpiracion ?? null;
+  } else {
+    categoria.aplicaciones.push({
+      aplicacionID,
+      aplicacionNombre,
+      aplicacionActiva,
+      aplicacionFechaExpiracion
+    });
+  }
+
+  inst.version++;
+  await inst.save();
+
+  res.json({ ok: true, version: inst.version });
+});
+
+
+// PATCH /instituciones/:id/apps/:appID/toggle
+app.patch("/instituciones/:id/apps/:appID/toggle", async (req, res) => {
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
+
+  for (const cat of inst.categorias) {
+    const app = cat.aplicaciones.find(a => a.aplicacionID === req.params.appID);
+    if (app) {
+      app.aplicacionActiva = !app.aplicacionActiva;
+      inst.version++;
+      await inst.save();
+      return res.json({ ok: true, activa: app.aplicacionActiva });
     }
   }
-);
 
-export default mongoose.model(
-  "Institucion",
-  InstitucionSchema,
-  "instituciones"
-);
+  res.status(404).json({ ok: false });
+});
+
+
+// DELETE /instituciones/:id/categorias/:categoriaID/apps/:appID
+app.delete("/instituciones/:id/categorias/:categoriaID/apps/:appID", async (req, res) => {
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
+
+  const categoria = inst.categorias.find(
+    c => c.categoriaID === req.params.categoriaID
+  );
+
+  if (!categoria) return res.status(404).json({ ok: false });
+
+  categoria.aplicaciones = categoria.aplicaciones.filter(
+    a => a.aplicacionID !== req.params.appID
+  );
+
+  inst.version++;
+  await inst.save();
+
+  res.json({ ok: true });
+});
+
+
+
 
 // ============================
 // DEBUG DB (opcional)

@@ -1,6 +1,31 @@
 import mongoose from "mongoose";
 
 // ============================
+// SUBDOCUMENTO: APLICACIÓN
+// ============================
+const AplicacionSchema = new mongoose.Schema(
+  {
+    aplicacionID: { type: String, required: true },
+    aplicacionNombre: { type: String, required: true },
+    aplicacionActiva: { type: Boolean, default: true },
+    aplicacionFechaExpiracion: { type: Date, default: null }
+  },
+  { _id: false }
+);
+
+// ============================
+// SUBDOCUMENTO: CATEGORÍA
+// ============================
+const CategoriaSchema = new mongoose.Schema(
+  {
+    categoriaID: { type: String, required: true },
+    categoriaNombre: { type: String, required: true },
+    aplicaciones: { type: [AplicacionSchema], default: [] }
+  },
+  { _id: false }
+);
+
+// ============================
 // SUBDOCUMENTO: LICENCIA
 // ============================
 const LicenciaSchema = new mongoose.Schema(
@@ -10,27 +35,7 @@ const LicenciaSchema = new mongoose.Schema(
       enum: ["mensual", "anual", "perpetua"],
       required: true
     },
-    expiracion: {
-      type: Date,
-      default: null
-    }
-  },
-  { _id: false }
-);
-
-// ============================
-// SUBDOCUMENTO: PERMISO
-// ============================
-const PermisoSchema = new mongoose.Schema(
-  {
-    idModulo: {
-      type: String,
-      required: true
-    },
-    enabled: {
-      type: Boolean,
-      default: true
-    }
+    expiracion: { type: Date, default: null }
   },
   { _id: false }
 );
@@ -40,36 +45,14 @@ const PermisoSchema = new mongoose.Schema(
 // ============================
 const InstitucionSchema = new mongoose.Schema(
   {
-    institucionNombre: {
-      type: String,
-      required: true
-    },
+    institucionNombre: { type: String, required: true },
+    institucionLicencia: { type: String, required: true, unique: true },
 
-    institucionLicencia: {
-      type: String,
-      required: true,
-      unique: true
-    },
+    categorias: { type: [CategoriaSchema], default: [] },
 
-    categorias: {
-      type: Array,
-      default: []
-    },
+    licencia: { type: LicenciaSchema, required: true },
 
-    licencia: {
-      type: LicenciaSchema,
-      required: true
-    },
-
-    permisos: {
-      type: [PermisoSchema],
-      default: []
-    },
-
-    version: {
-      type: Number,
-      default: 1
-    }
+    version: { type: Number, default: 1 }
   },
   {
     timestamps: {
@@ -79,9 +62,6 @@ const InstitucionSchema = new mongoose.Schema(
   }
 );
 
-// ============================
-// COLECCIÓN EXPLÍCITA
-// ============================
 export default mongoose.model(
   "Institucion",
   InstitucionSchema,
