@@ -1,10 +1,25 @@
 import mongoose from "mongoose";
 
-const PermisoSchema = new mongoose.Schema({
-  idModulo: { type: String, required: true },
-  enabled: { type: Boolean, default: true }
-});
+// ============================
+// SUBDOCUMENTO: PERMISO
+// ============================
+const PermisoSchema = new mongoose.Schema(
+  {
+    idModulo: {
+      type: String,
+      required: true
+    },
+    enabled: {
+      type: Boolean,
+      default: true
+    }
+  },
+  { _id: false }
+);
 
+// ============================
+// SCHEMA PRINCIPAL
+// ============================
 const InstitucionSchema = new mongoose.Schema(
   {
     institucionNombre: {
@@ -34,12 +49,15 @@ const InstitucionSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true // creadoEl / actualizadoEl
+    timestamps: true
   }
 );
 
+// ============================
+// NOMBRE EXPLÍCITO DE COLECCIÓN
+// ============================
 export default mongoose.model(
   "Institucion",
   InstitucionSchema,
-  "instituciones" // nombre explícito
+  "instituciones"
 );
