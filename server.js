@@ -172,6 +172,51 @@ app.post("/instituciones/obtener-licencia", async (req, res) => {
 });
 
 // ============================
+// ACTUALIZAR CATEGORÍAS
+// PATCH /instituciones/:id/categorias
+// ============================
+app.patch("/instituciones/:id/categorias", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { categorias } = req.body;
+
+    if (!Array.isArray(categorias)) {
+      return res.status(400).json({
+        ok: false,
+        msg: "categorias debe ser un array"
+      });
+    }
+
+    const inst = await Institucion.findById(id);
+    if (!inst) {
+      return res.status(404).json({
+        ok: false,
+        msg: "Institución no encontrada"
+      });
+    }
+
+    inst.categorias = categorias;
+    inst.version += 1;
+    inst.actualizadoEl = new Date();
+
+    await inst.save();
+
+    return res.json({
+      ok: true,
+      version: inst.version,
+      actualizadoEl: inst.actualizadoEl
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      ok: false,
+      msg: "Error interno"
+    });
+  }
+});
+
+
+// ============================
 // DEBUG DB (opcional)
 // ============================
 app.get("/debug/db", (req, res) => {
