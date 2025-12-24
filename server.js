@@ -145,6 +145,18 @@ app.get("/instituciones", async (req, res) => {
   }
 });
 
+app.get("/instituciones", async (req, res) => {
+  try {
+    const instituciones = await Institucion.listar();
+    res.json(instituciones);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      msg: "Error al listar instituciones"
+    });
+  }
+});
+
 // ============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
