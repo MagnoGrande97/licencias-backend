@@ -118,9 +118,17 @@ app.post("/licencias/crear", async (req, res) => {
 });
 
 // Endpoint temporal en server.js
-app.get("/licencias/listar", async (req, res) => {
-    const entidades = await Entidad.find({}, { entidadId: 1, codigoDeActivacion: 1, _id: 0 });
-    res.json(entidades);
+app.get("/instituciones", async (req, res) => {
+  const instituciones = await Institucion.find(
+    {},
+    {
+      institucionNombre: 1,
+      institucionLicencia: 1,
+      expiracion: 1
+    }
+  );
+
+  res.json(instituciones);
 });
 
 const PORT = process.env.PORT || 3000;
