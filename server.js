@@ -17,7 +17,7 @@ mongoose
   .catch(err => console.error("Error MongoDB:", err));
 
 // ============================
-// CREAR INSTITUCIÓN + LICENCIA
+// CREAR INSTITUCIÓN
 // POST /instituciones
 // ============================
 app.post("/instituciones", async (req, res) => {
@@ -25,13 +25,14 @@ app.post("/instituciones", async (req, res) => {
     const {
       institucionNombre,
       institucionLicencia,
+      tipoLicencia,
       expiracion
     } = req.body;
 
-    if (!institucionNombre || !institucionLicencia) {
+    if (!institucionNombre || !institucionLicencia || !tipoLicencia) {
       return res.status(400).json({
         ok: false,
-        msg: "institucionNombre e institucionLicencia son obligatorios"
+        msg: "Datos incompletos"
       });
     }
 
@@ -48,14 +49,18 @@ app.post("/instituciones", async (req, res) => {
     const nueva = new Institucion({
       institucionNombre,
       institucionLicencia,
-      expiracion: expiracion ?? null,
+      categorias: [],
+      licencia: {
+        tipo: tipoLicencia,
+        expiracion: expiracion ?? null
+      },
       permisos: [],
       version: 1
     });
 
     await nueva.save();
 
-    return res.json({
+    res.json({
       ok: true,
       institucionID: nueva._id.toString(),
       institucionNombre: nueva.institucionNombre,
@@ -92,8 +97,8 @@ app.post("/instituciones/validar-licencia", async (req, res) => {
     }
 
     if (
-      institucion.expiracion &&
-      new Date(institucion.expiracion) < new Date()
+      institucion.licencia.expiracion &&
+      new Date(institucion.licencia.expiracion) < new Date()
     ) {
       return res.json({
         valida: false,
@@ -101,13 +106,13 @@ app.post("/instituciones/validar-licencia", async (req, res) => {
       });
     }
 
-    return res.json({
+    res.json({
       valida: true,
       institucionID: institucion._id.toString(),
       institucionNombre: institucion.institucionNombre,
       institucionLicencia: institucion.institucionLicencia,
-      permisos: institucion.permisos,
-      expiracion: institucion.expiracion,
+      licencia: institucion.licencia,
+      categorias: institucion.categorias,
       version: institucion.version
     });
   } catch (e) {
@@ -125,28 +130,6 @@ app.post("/instituciones/validar-licencia", async (req, res) => {
 // ============================
 app.get("/instituciones", async (req, res) => {
   try {
-    const instituciones = await Institucion.find(
-      {},
-      {
-        institucionNombre: 1,
-        institucionLicencia: 1,
-        expiracion: 1,
-        version: 1
-      }
-    );
-
-    res.json(instituciones);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      ok: false,
-      msg: "Error interno"
-    });
-  }
-});
-
-app.get("/instituciones", async (req, res) => {
-  try {
     const instituciones = await Institucion.find({}, {
       institucionNombre: 1,
       institucionLicencia: 1,
@@ -162,6 +145,15 @@ app.get("/instituciones", async (req, res) => {
       msg: "Error interno"
     });
   }
+});
+
+// ============================
+// DEBUG DB (opcional)
+// ============================
+app.get("/debug/db", (req, res) => {
+  res.json({
+    db: mongoose.connection.name
+  });
 });
 
 // ============================

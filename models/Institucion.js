@@ -23,8 +23,14 @@ const LicenciaSchema = new mongoose.Schema(
 // ============================
 const PermisoSchema = new mongoose.Schema(
   {
-    idModulo: { type: String, required: true },
-    enabled: { type: Boolean, default: true }
+    idModulo: {
+      type: String,
+      required: true
+    },
+    enabled: {
+      type: Boolean,
+      default: true
+    }
   },
   { _id: false }
 );
@@ -73,6 +79,9 @@ const InstitucionSchema = new mongoose.Schema(
   }
 );
 
+// ============================
+// COLECCIÓN EXPLÍCITA
+// ============================
 export default mongoose.model(
   "Institucion",
   InstitucionSchema,
