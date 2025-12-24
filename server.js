@@ -179,7 +179,6 @@ app.get("/instituciones/:id", async (req, res) => {
   res.json(inst);
 });
 
-
 // POST /instituciones/:id/categorias
 app.post("/instituciones/:id/categorias", async (req, res) => {
   const { categoriaID, categoriaNombre } = req.body;
@@ -198,7 +197,6 @@ app.post("/instituciones/:id/categorias", async (req, res) => {
 
   res.json({ ok: true, version: inst.version });
 });
-
 
 // POST /instituciones/:id/categorias/:categoriaID/apps
 app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => {
@@ -242,7 +240,6 @@ app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => 
   res.json({ ok: true, version: inst.version });
 });
 
-
 // PATCH /instituciones/:id/apps/:appID/toggle
 app.patch("/instituciones/:id/apps/:appID/toggle", async (req, res) => {
   const inst = await Institucion.findById(req.params.id);
@@ -260,7 +257,6 @@ app.patch("/instituciones/:id/apps/:appID/toggle", async (req, res) => {
 
   res.status(404).json({ ok: false });
 });
-
 
 // DELETE /instituciones/:id/categorias/:categoriaID/apps/:appID
 app.delete("/instituciones/:id/categorias/:categoriaID/apps/:appID", async (req, res) => {
@@ -282,9 +278,6 @@ app.delete("/instituciones/:id/categorias/:categoriaID/apps/:appID", async (req,
 
   res.json({ ok: true });
 });
-
-
-
 
 // ============================
 // DEBUG DB (opcional)
