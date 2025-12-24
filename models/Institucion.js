@@ -1,10 +1,37 @@
 import mongoose from "mongoose";
 
-const PermisoSchema = new mongoose.Schema({
-  idModulo: { type: String, required: true },
-  enabled: { type: Boolean, default: true }
-});
+// ============================
+// SUBDOCUMENTO: LICENCIA
+// ============================
+const LicenciaSchema = new mongoose.Schema(
+  {
+    tipo: {
+      type: String,
+      enum: ["mensual", "anual", "perpetua"],
+      required: true
+    },
+    expiracion: {
+      type: Date,
+      default: null
+    }
+  },
+  { _id: false }
+);
 
+// ============================
+// SUBDOCUMENTO: PERMISO
+// ============================
+const PermisoSchema = new mongoose.Schema(
+  {
+    idModulo: { type: String, required: true },
+    enabled: { type: Boolean, default: true }
+  },
+  { _id: false }
+);
+
+// ============================
+// SCHEMA PRINCIPAL
+// ============================
 const InstitucionSchema = new mongoose.Schema(
   {
     institucionNombre: {
@@ -18,14 +45,19 @@ const InstitucionSchema = new mongoose.Schema(
       unique: true
     },
 
-    permisos: {
-      type: [PermisoSchema],
+    categorias: {
+      type: Array,
       default: []
     },
 
-    expiracion: {
-      type: Date,
-      default: null
+    licencia: {
+      type: LicenciaSchema,
+      required: true
+    },
+
+    permisos: {
+      type: [PermisoSchema],
+      default: []
     },
 
     version: {
@@ -34,8 +66,15 @@ const InstitucionSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true // creadoEl / actualizadoEl
+    timestamps: {
+      createdAt: "creadoEl",
+      updatedAt: "actualizadoEl"
+    }
   }
 );
 
-export default mongoose.model("Institucion", InstitucionSchema);
+export default mongoose.model(
+  "Institucion",
+  InstitucionSchema,
+  "instituciones"
+);
