@@ -55,6 +55,7 @@ const InstitucionSchema = new mongoose.Schema(
     version: { type: Number, default: 1 }
   },
   {
+    versionKey: false,
     timestamps: {
       createdAt: "creadoEl",
       updatedAt: "actualizadoEl"
