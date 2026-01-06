@@ -229,7 +229,10 @@ app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => 
     aplicacionID,
     aplicacionNombre,
     aplicacionActiva,
-    aplicacionFechaExpiracion
+    aplicacionFechaExpiracion,
+    addressableKey,
+    categoriaId,
+    requiereDescarga
   } = req.body;
 
   const inst = await Institucion.findById(req.params.id);
