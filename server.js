@@ -253,12 +253,18 @@ app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => 
     existente.aplicacionNombre = aplicacionNombre;
     existente.aplicacionActiva = aplicacionActiva;
     existente.aplicacionFechaExpiracion = aplicacionFechaExpiracion ?? null;
+    existente.addressableKey = addressableKey ?? existente.addressableKey;
+    existente.categoriaId = categoriaId ?? existente.categoriaId;
+    existente.requiereDescarga = requiereDescarga ?? existente.requiereDescarga;
   } else {
     categoria.aplicaciones.push({
       aplicacionID,
       aplicacionNombre,
       aplicacionActiva,
-      aplicacionFechaExpiracion
+      aplicacionFechaExpiracion,
+      addressableKey,
+      categoriaId,
+      requiereDescarga
     });
   }
 
