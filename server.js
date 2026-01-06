@@ -186,10 +186,35 @@ app.post("/instituciones/:id/categorias", async (req, res) => {
   const inst = await Institucion.findById(req.params.id);
   if (!inst) return res.status(404).json({ ok: false });
 
+  app.post("/instituciones/:id/categorias", async (req, res) => {
+  const { categoriaID, categoriaNombre } = req.body;
+
+  const inst = await Institucion.findById(req.params.id);
+  if (!inst) return res.status(404).json({ ok: false });
+
+  const existente = inst.categorias.find(
+    c => c.categoriaID === categoriaID
+  );
+
+  if (existente) {
+    // idempotente
+    return res.json({
+      ok: true,
+      msg: "Categoría ya existe",
+      version: inst.version
+    });
+  }
+
   inst.categorias.push({
-    categoriaID,
-    categoriaNombre,
-    aplicaciones: []
+      categoriaID,
+      categoriaNombre,
+      aplicaciones: []
+    });
+  
+    inst.version++;
+    await inst.save();
+  
+    res.json({ ok: true, version: inst.version });
   });
 
   inst.version++;
