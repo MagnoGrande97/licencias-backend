@@ -30,14 +30,10 @@ app.post("/instituciones", async (req, res) => {
     } = req.body;
 
     if (!institucionNombre || !institucionLicencia || !tipoLicencia) {
-      return res.status(400).json({
-        ok: false,
-        msg: "Datos incompletos"
-      });
+      return res.status(400).json({ ok: false, msg: "Datos incompletos" });
     }
 
     const existe = await Institucion.findOne({ institucionLicencia });
-
     if (existe) {
       return res.json({
         ok: true,
@@ -54,7 +50,6 @@ app.post("/instituciones", async (req, res) => {
         tipo: tipoLicencia,
         expiracion: expiracion ?? null
       },
-      permisos: [],
       version: 1
     });
 
@@ -68,224 +63,140 @@ app.post("/instituciones", async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      ok: false,
-      msg: "Error interno"
-    });
+    res.status(500).json({ ok: false, msg: "Error interno" });
   }
 });
 
 // ============================
 // VALIDAR LICENCIA
-// POST /instituciones/validar-licencia
 // ============================
 app.post("/instituciones/validar-licencia", async (req, res) => {
   try {
     const { institucionLicencia } = req.body;
+    if (!institucionLicencia)
+      return res.status(400).json({ valida: false });
 
-    if (!institucionLicencia) {
-      return res.status(400).json({
-        valida: false,
-        msg: "institucionLicencia requerida"
-      });
-    }
-
-    const institucion = await Institucion.findOne({ institucionLicencia });
-
-    if (!institucion) {
-      return res.json({ valida: false });
-    }
+    const inst = await Institucion.findOne({ institucionLicencia });
+    if (!inst) return res.json({ valida: false });
 
     if (
-      institucion.licencia.expiracion &&
-      new Date(institucion.licencia.expiracion) < new Date()
+      inst.licencia.expiracion &&
+      new Date(inst.licencia.expiracion) < new Date()
     ) {
-      return res.json({
-        valida: false,
-        msg: "Licencia expirada"
-      });
+      return res.json({ valida: false, msg: "Licencia expirada" });
     }
 
     res.json({
       valida: true,
-      institucionID: institucion._id.toString(),
-      institucionNombre: institucion.institucionNombre,
-      institucionLicencia: institucion.institucionLicencia,
-      licencia: institucion.licencia,
-      categorias: institucion.categorias,
-      version: institucion.version
+      institucionID: inst._id.toString(),
+      institucionNombre: inst.institucionNombre,
+      categorias: inst.categorias,
+      licencia: inst.licencia,
+      version: inst.version
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      valida: false,
-      msg: "Error interno"
-    });
+    res.status(500).json({ valida: false });
   }
 });
 
 // ============================
-// LISTAR INSTITUCIONES
-// GET /instituciones
-// ============================
-app.get("/instituciones", async (req, res) => {
-  try {
-    const instituciones = await Institucion.find({}, {
-      institucionNombre: 1,
-      institucionLicencia: 1,
-      licencia: 1,
-      version: 1
-    });
-
-    res.json(instituciones);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      ok: false,
-      msg: "Error interno"
-    });
-  }
-});
-
-app.post("/instituciones/obtener-licencia", async (req, res) => {
-  const { institucionLicencia } = req.body;
-
-  const inst = await Institucion.findOne({ institucionLicencia });
-  if (!inst) return res.json({ valida: false });
-
-  // Expiración global
-  if (
-    inst.licencia?.expiracion &&
-    new Date(inst.licencia.expiracion) < new Date()
-  ) {
-    return res.json({ valida: false, msg: "Licencia expirada" });
-  }
-
-  res.json({
-    valida: true,
-    institucionID: inst._id.toString(),
-    institucionNombre: inst.institucionNombre,
-    categorias: inst.categorias,
-    licencia: inst.licencia,
-    version: inst.version
-  });
-});
-
-// GET /instituciones/:id
-app.get("/instituciones/:id", async (req, res) => {
-  const inst = await Institucion.findById(req.params.id);
-  if (!inst) return res.status(404).json({ ok: false });
-
-  res.json(inst);
-});
-
+// CREAR CATEGORÍA (IDEMPOTENTE)
 // POST /instituciones/:id/categorias
+// ============================
 app.post("/instituciones/:id/categorias", async (req, res) => {
-  const { categoriaID, categoriaNombre } = req.body;
+  try {
+    const { categoriaID, categoriaNombre } = req.body;
+    if (!categoriaID || !categoriaNombre)
+      return res.status(400).json({ ok: false });
 
-  const inst = await Institucion.findById(req.params.id);
-  if (!inst) return res.status(404).json({ ok: false });
+    const inst = await Institucion.findById(req.params.id);
+    if (!inst) return res.status(404).json({ ok: false });
 
-  inst.categorias.push({
-    categoriaID,
-    categoriaNombre,
-    aplicaciones: []
-  });
+    const existe = inst.categorias.find(
+      c => c.categoriaID === categoriaID
+    );
 
-  inst.version++;
-  await inst.save();
+    if (existe) {
+      return res.json({
+        ok: true,
+        msg: "Categoría ya existe",
+        version: inst.version
+      });
+    }
 
-  res.json({ ok: true, version: inst.version });
+    inst.categorias.push({
+      categoriaID,
+      categoriaNombre,
+      aplicaciones: []
+    });
+
+    inst.version++;
+    await inst.save();
+
+    res.json({ ok: true, version: inst.version });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false });
+  }
 });
 
+// ============================
+// CREAR / ACTUALIZAR APP
 // POST /instituciones/:id/categorias/:categoriaID/apps
+// ============================
 app.post("/instituciones/:id/categorias/:categoriaID/apps", async (req, res) => {
-  const {
-    aplicacionID,
-    aplicacionNombre,
-    aplicacionActiva,
-    aplicacionFechaExpiracion
-  } = req.body;
-
-  const inst = await Institucion.findById(req.params.id);
-  if (!inst) return res.status(404).json({ ok: false });
-
-  const categoria = inst.categorias.find(
-    c => c.categoriaID === req.params.categoriaID
-  );
-
-  if (!categoria)
-    return res.status(404).json({ ok: false, msg: "Categoría no existe" });
-
-  const existente = categoria.aplicaciones.find(
-    a => a.aplicacionID === aplicacionID
-  );
-
-  if (existente) {
-    existente.aplicacionNombre = aplicacionNombre;
-    existente.aplicacionActiva = aplicacionActiva;
-    existente.aplicacionFechaExpiracion = aplicacionFechaExpiracion ?? null;
-  } else {
-    categoria.aplicaciones.push({
+  try {
+    const {
       aplicacionID,
       aplicacionNombre,
       aplicacionActiva,
-      aplicacionFechaExpiracion
-    });
-  }
+      aplicacionFechaExpiracion,
+      addressableKey,
+      categoriaId,
+      requiereDescarga
+    } = req.body;
 
-  inst.version++;
-  await inst.save();
+    const inst = await Institucion.findById(req.params.id);
+    if (!inst) return res.status(404).json({ ok: false });
 
-  res.json({ ok: true, version: inst.version });
-});
+    const categoria = inst.categorias.find(
+      c => c.categoriaID === req.params.categoriaID
+    );
+    if (!categoria)
+      return res.status(404).json({ ok: false, msg: "Categoría no existe" });
 
-// PATCH /instituciones/:id/apps/:appID/toggle
-app.patch("/instituciones/:id/apps/:appID/toggle", async (req, res) => {
-  const inst = await Institucion.findById(req.params.id);
-  if (!inst) return res.status(404).json({ ok: false });
+    const app = categoria.aplicaciones.find(
+      a => a.aplicacionID === aplicacionID
+    );
 
-  for (const cat of inst.categorias) {
-    const app = cat.aplicaciones.find(a => a.aplicacionID === req.params.appID);
     if (app) {
-      app.aplicacionActiva = !app.aplicacionActiva;
-      inst.version++;
-      await inst.save();
-      return res.json({ ok: true, activa: app.aplicacionActiva });
+      app.aplicacionNombre = aplicacionNombre;
+      app.aplicacionActiva = aplicacionActiva;
+      app.aplicacionFechaExpiracion = aplicacionFechaExpiracion ?? null;
+      app.addressableKey = addressableKey ?? app.addressableKey;
+      app.categoriaId = categoriaId ?? app.categoriaId;
+      app.requiereDescarga = requiereDescarga ?? app.requiereDescarga;
+    } else {
+      categoria.aplicaciones.push({
+        aplicacionID,
+        aplicacionNombre,
+        aplicacionActiva,
+        aplicacionFechaExpiracion,
+        addressableKey,
+        categoriaId,
+        requiereDescarga
+      });
     }
+
+    inst.version++;
+    await inst.save();
+
+    res.json({ ok: true, version: inst.version });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false });
   }
-
-  res.status(404).json({ ok: false });
-});
-
-// DELETE /instituciones/:id/categorias/:categoriaID/apps/:appID
-app.delete("/instituciones/:id/categorias/:categoriaID/apps/:appID", async (req, res) => {
-  const inst = await Institucion.findById(req.params.id);
-  if (!inst) return res.status(404).json({ ok: false });
-
-  const categoria = inst.categorias.find(
-    c => c.categoriaID === req.params.categoriaID
-  );
-
-  if (!categoria) return res.status(404).json({ ok: false });
-
-  categoria.aplicaciones = categoria.aplicaciones.filter(
-    a => a.aplicacionID !== req.params.appID
-  );
-
-  inst.version++;
-  await inst.save();
-
-  res.json({ ok: true });
-});
-
-// ============================
-// DEBUG DB (opcional)
-// ============================
-app.get("/debug/db", (req, res) => {
-  res.json({
-    db: mongoose.connection.name
-  });
 });
 
 // ============================

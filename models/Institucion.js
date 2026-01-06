@@ -8,7 +8,11 @@ const AplicacionSchema = new mongoose.Schema(
     aplicacionID: { type: String, required: true },
     aplicacionNombre: { type: String, required: true },
     aplicacionActiva: { type: Boolean, default: true },
-    aplicacionFechaExpiracion: { type: Date, default: null }
+    aplicacionFechaExpiracion: { type: Date, default: null },
+
+    addressableKey: { type: String, default: null },
+    categoriaId: { type: String, default: null },
+    requiereDescarga: { type: Boolean, default: true }
   },
   { _id: false }
 );
@@ -47,14 +51,12 @@ const InstitucionSchema = new mongoose.Schema(
   {
     institucionNombre: { type: String, required: true },
     institucionLicencia: { type: String, required: true, unique: true },
-
     categorias: { type: [CategoriaSchema], default: [] },
-
     licencia: { type: LicenciaSchema, required: true },
-
     version: { type: Number, default: 1 }
   },
   {
+    versionKey: false,
     timestamps: {
       createdAt: "creadoEl",
       updatedAt: "actualizadoEl"
