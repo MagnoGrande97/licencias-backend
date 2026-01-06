@@ -8,7 +8,12 @@ const AplicacionSchema = new mongoose.Schema(
     aplicacionID: { type: String, required: true },
     aplicacionNombre: { type: String, required: true },
     aplicacionActiva: { type: Boolean, default: true },
-    aplicacionFechaExpiracion: { type: Date, default: null }
+    aplicacionFechaExpiracion: { type: Date, default: null },
+
+    // ADDRESSABLE METADATA
+    addressableKey: { type: String, default: null },
+    categoriaId: { type: String, default: null },
+    requiereDescarga: { type: Boolean, default: true }
   },
   { _id: false }
 );
